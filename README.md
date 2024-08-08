@@ -23,7 +23,6 @@ This is a Production Forecasting and QA Chatbot project that combines advanced t
   - `Streamlit` for building the web interface
   - `TensorFlow` and `Keras` for Neural Networks and LSTM
   - `Facebook Prophet` for time series forecasting
-  - `Django` for backend integration (if applicable)
   - `LangChain` for QA chatbot implementation
 - **Tools:**
   - `Git` for version control
