@@ -86,7 +86,8 @@ import pickle
 
 def show_forecasting_page():
     # Load the pickled model
-    with open(r'C:\Users\DELL\Production_forecasting_strmlt_prjct\prophet_model.pkl', 'rb') as f:
+    with open(r'C:\Users\DELL\Production_forecasting_st2\prophet_model.pkl', 'rb') as f:
+        
         model = pickle.load(f)
 
     # Function to make predictions
