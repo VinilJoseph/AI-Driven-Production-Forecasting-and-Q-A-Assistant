@@ -6,7 +6,7 @@ import faiss
 import pickle
 
 # Path to the PDF and the vector store save path
-pdf_path = r"C:\Users\DELL\datasets\petroleum_book\Petroleum_Production_Engineering_Boyun_G.pdf"
+pdf_path = r"static\Petroleum_Production_Engineering_Boyun_G.pdf"
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_path):
