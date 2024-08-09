@@ -34,7 +34,6 @@ def show_chatbot_page():
     prompt_template = """
     Answer the following question based only on the provided context.
     Think step by step before providing a detailed answer.
-    Try to keep your answer concise and within 150 words.
     If you don't know the answer, just say that you don't know, don't try to make up an answer.
     {context}
 
@@ -62,46 +61,31 @@ def show_chatbot_page():
         if not response.endswith(('.', '!', '?')):
             response += '.'
         return response
-    
+
     if query:
         response = retrieval_chain.invoke({"input": query})
-        
-        # Print the entire raw response for debugging
-        st.write("Raw Response:", response)
-        
-        # Extract the answer, assuming the response format is correct
-        answer = response.get("answer", "").strip()
-        
-        # Ensure the response is a complete sentence
-        complete_output = ensure_complete_sentence(answer)
-        
-        st.write("Processed Answer:", complete_output)
-        
-        # Save the context to memory
+        answer = response["answer"]
+        answer_marker = "Answer:"
+        start_index = answer.find(answer_marker)
+
+        if start_index != -1:
+            generated_output = answer[start_index + len(answer_marker):].strip()
+            formatted_output = "\n".join(line.strip() for line in generated_output.splitlines() if line.strip())
+
+            # Ensure the response is a complete sentence
+            complete_output = ensure_complete_sentence(formatted_output)
+            st.write(complete_output)
+        else:
+            formatted_output = answer.strip()
+            complete_output = ensure_complete_sentence(formatted_output)
+            st.write("Answer marker not found. Here is the raw response:")
+            st.write(complete_output)
+
         memory.save_context({"input": query}, {"output": complete_output})
 
-    # if query:
-    #     response = retrieval_chain.invoke({"input": query})
-    #     answer = response["answer"]
-    #     answer_marker = "Answer:"
-    #     start_index = answer.find(answer_marker)
 
-    #     if start_index != -1:
-    #         generated_output = answer[start_index + len(answer_marker):].strip()
-    #         formatted_output = "\n".join(line.strip() for line in generated_output.splitlines() if line.strip())
-
-    #         # Ensure the response is a complete sentence
-    #         complete_output = ensure_complete_sentence(formatted_output)
-    #         st.write(complete_output)
-    #     else:
-    #         formatted_output = answer.strip()
-    #         complete_output = ensure_complete_sentence(formatted_output)
-    #         st.write("Answer marker not found. Here is the raw response:")
-    #         st.write(complete_output)
-
-    #     memory.save_context({"input": query}, {"output": complete_output})
-
-
+# # Call the function to display the chatbot page
+# show_chatbot_page()
 
 # ===========================================================================
 # The below code is to run the page alone
