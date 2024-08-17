@@ -32,9 +32,10 @@ def show_chatbot_page():
 
     # Initialize the prompt with a hint to the model to limit the response length
     prompt_template = """
-    Answer the following question based only on the provided context.
-    Think step by step before providing a detailed answer.
-    If you don't know the answer, just say that you don't know, don't try to make up an answer.
+    You are a Q&A assistant. Your goal is to answer questions as accurately as possible based on the instructions and context provided.
+    Answer the following question based only on the provided context.In the first paragraph explain the answer and in the second paragraph explain the reason for the answer.
+    If you don't know the answer, just say that you don't know. Don't try to make up an answer.
+
     {context}
 
     Question: {input}
