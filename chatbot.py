@@ -10,37 +10,76 @@ from langchain.memory import ConversationBufferMemory
 import streamlit as st
 
 def show_chatbot_page():
-    # Load the embeddings
+    # Load the embeddings and other components
     with open("embedding.pkl", "rb") as f:
         embeddings = pickle.load(f)
 
-    # Load the FAISS index
     index = faiss.read_index("vector_store.index")
 
-    # Load the docstore and index_to_docstore_id
     with open("docstore.pkl", "rb") as f:
         docstore = pickle.load(f)
 
     with open("index_to_docstore_id.pkl", "rb") as f:
         index_to_docstore_id = pickle.load(f)
 
-    # Create the FAISS vector store
     vector_store = FAISS(index=index, embedding_function=embeddings, docstore=docstore, index_to_docstore_id=index_to_docstore_id)
 
-    # Initialize the LLM
     llm = HuggingFaceHub(repo_id="HuggingFaceH4/zephyr-7b-beta", huggingfacehub_api_token='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')
 
-    # Initialize the prompt with a hint to the model to limit the response length
+    # Welcome section
+    st.title("🛢️ Petroleum Engineering Knowledge Assistant")
+    
+    # Information section
+    with st.container():
+        st.markdown("""
+        <div style='background-color: rgba(35, 45, 55, 0.8); padding: 20px; border-radius: 10px; margin-bottom: 20px;'>
+        <h3>About This Assistant</h3>
+        <p>Welcome to your Petroleum Engineering Knowledge Assistant! This chatbot uses RAG (Retrieval Augmented Generation) 
+        technology to answer your questions based on petroleum engineering textbooks and documentation.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Guidelines section
+    with st.expander("📚 Usage Guidelines"):
+        st.markdown("""
+        ### You can ask questions about:
+        - Petroleum engineering concepts and principles
+        - Oil and gas equipment and machinery
+        - Drilling operations and techniques
+        - Well completion and production
+        - Reservoir characteristics
+        - Field development and operations
+        - Safety procedures and protocols
+
+        ### Example Questions:
+        1. "What are the main components of a drilling rig?"
+        2. "Explain the function of Christmas tree in well completion?"
+        3. "What factors affect reservoir pressure?"
+        4. "How does a mud pump work?"
+        """)
+
+    # Prompt template
     prompt_template = """
-    You are a Q&A assistant. Your goal is to answer questions as accurately as possible based on the instructions and context provided.
-    Answer the following question based only on the provided context.In the first paragraph explain the answer and in the second paragraph explain the reason for the answer.
-    If you don't know the answer, just say that you don't know. Don't try to make up an answer.
+        You are a sophisticated petroleum engineering assistant
+        with expertise in oil & gas operations, drilling, production, 
+        and reservoir engineering. Your responses should be accurate, 
+        clear, and based solely on the provided context.
 
-    {context}
+        Instructions for response:
+        1. Analyze the context carefully before responding
+        2. Focus only on information present in the context
+        3. Structure your response with:
+        - Main explanation of the concept/answer
+        - Supporting technical reasoning
+        - If applicable, practical implications
+        4. Keep responses concise and technically accurate
 
-    Question: {input}
-    Answer:
-    """
+        Context: {context}
+
+        Question: {input}
+
+        Answer: Let me explain this clearly based on the provided information.
+        """
     prompt = ChatPromptTemplate.from_template(prompt_template)
 
     # Create document and retrieval chain
@@ -51,39 +90,63 @@ def show_chatbot_page():
     # Initialize memory
     memory = ConversationBufferMemory(return_messages=True)
 
-    # Streamlit UI
-    st.title("PDF-based Q&A Chatbot 🗒️ ")
-
-    query = st.text_input("Ask a question about the PDF")
+    # Chat interface
+    st.markdown("### Ask Your Question 💭")
+    query = st.text_input(
+        "",
+        placeholder="Enter your petroleum engineering related question here...",
+        key="query_input"
+    )
 
     def ensure_complete_sentence(response):
-        # Ensure the response ends with proper punctuation
         response = response.strip()
         if not response.endswith(('.', '!', '?')):
             response += '.'
         return response
 
     if query:
-        response = retrieval_chain.invoke({"input": query})
-        answer = response["answer"]
-        answer_marker = "Answer:"
-        start_index = answer.find(answer_marker)
+        # Add a spinner while processing
+        with st.spinner('Retrieving information...'):
+            response = retrieval_chain.invoke({"input": query})
+            answer = response["answer"]
+            answer_marker = "Answer:"
+            start_index = answer.find(answer_marker)
 
-        if start_index != -1:
-            generated_output = answer[start_index + len(answer_marker):].strip()
-            formatted_output = "\n".join(line.strip() for line in generated_output.splitlines() if line.strip())
+            # Display answer in a nice container
+            st.markdown("### Answer:")
+            with st.container():
+                if start_index != -1:
+                    generated_output = answer[start_index + len(answer_marker):].strip()
+                    formatted_output = "\n".join(line.strip() for line in generated_output.splitlines() if line.strip())
+                    complete_output = ensure_complete_sentence(formatted_output)
+                    st.markdown(f"""
+                    <div style='background-color: rgba(35, 45, 55, 0.8); padding: 20px; border-radius: 10px;'>
+                    {complete_output}
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    formatted_output = answer.strip()
+                    complete_output = ensure_complete_sentence(formatted_output)
+                    st.warning("Answer marker not found. Here is the raw response:")
+                    st.markdown(f"""
+                    <div style='background-color: rgba(35, 45, 55, 0.8); padding: 20px; border-radius: 10px;'>
+                    {complete_output}
+                    </div>
+                    """, unsafe_allow_html=True)
 
-            # Ensure the response is a complete sentence
-            complete_output = ensure_complete_sentence(formatted_output)
-            st.write(complete_output)
-        else:
-            formatted_output = answer.strip()
-            complete_output = ensure_complete_sentence(formatted_output)
-            st.write("Answer marker not found. Here is the raw response:")
-            st.write(complete_output)
+            memory.save_context({"input": query}, {"output": complete_output})
 
-        memory.save_context({"input": query}, {"output": complete_output})
+    # Footer with disclaimer
+    st.markdown("""
+    <div style='background-color: rgba(35, 45, 55, 0.8); padding: 15px; border-radius: 10px; margin-top: 20px;'>
+    <h4>📝 Note</h4>
+    <p>This assistant uses RAG (Retrieval Augmented Generation) technology to provide accurate information based on petroleum engineering textbooks. 
+    While it strives for accuracy, please verify critical information from official sources.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
+
+# ===================================================================
 
 # # Call the function to display the chatbot page
 # show_chatbot_page()
