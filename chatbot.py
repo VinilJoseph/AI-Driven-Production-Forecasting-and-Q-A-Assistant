@@ -92,11 +92,18 @@ def show_chatbot_page():
 
     # Chat interface
     st.markdown("### Ask Your Question 💭")
+    # query = st.text_input(
+    #     "",
+    #     placeholder="Enter your petroleum engineering related question here...",
+    #     key="query_input"
+    # )
     query = st.text_input(
-        "",
+        "Your Question",
         placeholder="Enter your petroleum engineering related question here...",
-        key="query_input"
+        key="query_input",
+        label_visibility="collapsed"
     )
+
 
     def ensure_complete_sentence(response):
         response = response.strip()
